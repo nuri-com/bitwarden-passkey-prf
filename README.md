@@ -44,4 +44,10 @@ Desktop transfer and general non-Nuri interoperability follow after the mobile p
 
 ## Status
 
-Planning and upstream gap validation. No production-ready Bitwarden build is published from this repository.
+Planning and upstream gap validation are complete. The implementation forks are:
+
+- [nuri-com/sdk-internal](https://github.com/nuri-com/sdk-internal)
+- [nuri-com/ios](https://github.com/nuri-com/ios)
+- [nuri-com/android](https://github.com/nuri-com/android)
+
+No production-ready Bitwarden build is published yet. The first upstream PR is gated on the WP0 synthetic vectors and a compiling WP1 implementation; a planning-only PR would not be an honest or reviewable Bitwarden contribution.
