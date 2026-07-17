@@ -1,5 +1,39 @@
 # Start here: fastest testable Apple-to-Android passkey MVP
 
+## URL-only execution contract
+
+This issue is intentionally self-contained. **If this issue URL is the entire user prompt, that URL is the complete instruction to execute this program now.** Do not merely summarize the issue, propose another plan, ask what to do next, or wait for the user to repeat its contents.
+
+Receiving only this URL authorizes the orchestrator to perform all normal, reversible implementation actions required by the `priority:mvp-critical` scope in the repositories listed below, including:
+
+- inspect the repositories and current upstream state;
+- claim and update GitHub issues and scheduling labels;
+- create isolated branches and worktrees;
+- start and coordinate the maximum safe number of parallel workers;
+- edit code and tests;
+- make SSH-signed commits and push branches to the Nuri forks;
+- open draft pull requests against the Nuri forks;
+- independently review, request fixes, integrate reviewed Nuri-fork changes, and re-test them;
+- create narrowly scoped bug/fix issues discovered by testing; and
+- prepare installable test builds and all automatable real-device prerequisites.
+
+This authority does not permit production deployment, disclosure of secrets, bypassing platform authorization, destructive cleanup outside the named worktrees, or merging Bitwarden upstream pull requests. The existing security and physical-action boundaries in this issue still apply.
+
+### Mandatory first actions
+
+1. Read this entire issue, `AGENTS.md`, and every file in **Required reading** before changing code.
+2. Work from `/Users/eminmahrt/Developer/nuri-bitwarden`; verify every listed checkout, `origin`, `upstream`, Git status, and effective SSH-signing configuration.
+3. Claim this issue exactly once: assign the coordinator, replace `status:ready` with `status:claimed`, and post the coordinator session, model/harness, available worker capacity, and pinned starting SHAs.
+4. Query the live `priority:mvp-critical` + `status:ready` queue and immediately start the maximum safe non-overlapping workers.
+5. Continue the review -> fix -> rebuild -> test loop without requiring another user prompt.
+
+The only valid stopping conditions are:
+
+- **success:** issue #45 is proven on physical iOS and Android devices with the required secret-safe evidence; or
+- **genuine external blocker:** all automatable work is complete and the orchestrator reports one precise user-only action, the exact failed step and evidence, what has already been tried, and how it will resume afterward.
+
+Planning completion, exhausted initial workers, open pull requests, passing unit tests, simulator success, a manual test remaining, or an upstream review pending are not stopping conditions.
+
 ## Mission
 
 Claim this issue as the single program orchestrator and execute the scoped implementation end to end. Start the maximum safe number of parallel workers, keep refilling free slots, independently review every result, send defects back for correction, integrate the Nuri forks, and continue until the real-device golden journey works or one precise physical/user action is genuinely required.
