@@ -2,6 +2,8 @@
 
 Upstream-first work to make a PRF-capable passkey created with Apple Passwords usable through Bitwarden on Android without changing the derived Nuri wallet.
 
+**Start the implementation swarm at [issue #68](https://github.com/nuri-com/bitwarden-passkey-prf/issues/68).** It is the claimable end-to-end orchestrator task: build, review, fix, and test the smallest functional path until it works on real iOS and Android devices. Cosmetic work and generalization are explicitly parked.
+
 ## Goal
 
 A Nuri user can:
@@ -25,6 +27,7 @@ This repository holds the contract, implementation plan, interoperability tests,
 - [Upstream contribution sequence](docs/upstream.md)
 - [Agent-swarm roadmap](docs/roadmap.md)
 - [Swarm operating model](docs/swarm.md)
+- [Orchestrator task and proof-first scope](docs/orchestrator.md)
 
 ## Initial scope
 
@@ -53,4 +56,4 @@ Planning and upstream gap validation are complete. The implementation forks are:
 - [nuri-com/ios](https://github.com/nuri-com/ios)
 - [nuri-com/android](https://github.com/nuri-com/android)
 
-The GitHub backlog now contains six parent epics and 49 agent-sized tasks across five delivery milestones. Ten independent discovery tickets are immediately ready for parallel agents. No production-ready Bitwarden build is published yet. The first upstream PR is gated on the synthetic vectors and a compiling shared-core implementation; a planning-only PR would not be an honest or reviewable Bitwarden contribution.
+The GitHub backlog contains six parent epics, 49 agent-sized implementation tasks, and one claimable orchestrator task across five delivery milestones. Nine MVP-critical discovery tickets are immediately ready for parallel agents. The first goal is an installable real-device iOS-to-Android proof; export-back-out, desktop, broad providers, polish, full hardening, and upstream PR packaging follow only after that proof is green. No production-ready Bitwarden build is published yet.

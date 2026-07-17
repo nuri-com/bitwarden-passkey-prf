@@ -5,10 +5,13 @@ Read `README.md`, `docs/nuri-prf-contract.md`, `docs/plan.md`, and `docs/swarm.m
 ## Claiming work
 
 - Claim only an issue carrying `status:ready` and `parallel-safe`.
+- Issue #68 is the sole exception: exactly one program coordinator claims it even though it is not `parallel-safe`.
+- Until the real-device golden journey in #45 is green, claim only `priority:mvp-critical` work. `priority:post-proof` is parked unless a proven blocker makes it unavoidable.
 - One agent owns one issue, one branch, and one pull request at a time.
 - Atomically replace `status:ready` with `status:claimed`, assign yourself, and comment with the target repository, branch, and files you expect to touch.
 - Do not start an issue with an open item in its `Blocked by` section.
 - `integration-gate` issues are coordinator-owned and must not be claimed by an implementation agent.
+- Functional proof outranks cleanup. Do not add cosmetic work, speculative abstractions, general provider support, desktop work, or upstream packaging to an MVP-critical branch.
 
 ## Branch and repository boundaries
 

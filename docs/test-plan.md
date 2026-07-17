@@ -1,5 +1,9 @@
 # Mobile interoperability and release tests
 
+## Proof-first rule
+
+Until golden recovery issue #45 is green, run the golden journey plus only the focused synthetic/fail-closed checks needed to avoid creating a different wallet. The broad matrix below is post-proof hardening and must not delay the first installable iOS and Android builds. UI polish, desktop coverage, additional exporters, and general provider compatibility are not part of the first run.
+
 ## Golden journey
 
 1. Start with a clean iOS 26 device and a Nuri test account.
@@ -15,7 +19,7 @@
 11. Verify PRF presence and compare all public identities with the iOS baseline.
 12. Exercise one non-destructive signing proof and verify it against the original public credential.
 
-## Required matrix
+## Post-proof hardening matrix
 
 | Area | Cases |
 | --- | --- |

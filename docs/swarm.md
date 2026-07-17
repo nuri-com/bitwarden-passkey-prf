@@ -12,6 +12,9 @@ GitHub is the source of truth for scheduling. Milestones express integration gat
 | `status:review` | A branch and pull request are ready for independent review. |
 | `parallel-safe` | The ticket has an isolated deliverable suitable for its own agent. |
 | `integration-gate` | Serial coordinator task that combines several agent outputs. |
+| `priority:mvp-critical` | Required for the first physical iOS-to-Android proof. Claim these first. |
+| `priority:post-proof` | Explicitly parked until golden recovery issue #45 is green. |
+| `scope:no-polish` | Implement only behavior required by the proof; no cosmetic or speculative work. |
 | `wave:*` | Broad concurrency wave. A later wave may still start early when its explicit dependencies are closed. |
 | `track:*` | Primary repository or review specialty. |
 
@@ -25,7 +28,7 @@ Explicit `Blocked by` links override labels. A ticket never becomes ready merely
 4. `M3 — Mobile v0.1 E2E`: prove the real Apple-to-Android Nuri journey and produce test builds.
 5. `M4 — Upstream Delivery`: submit focused Bitwarden changes and close review feedback.
 
-The `Program — Mobile v0.1` milestone contains the six parent epics only.
+The `Program — Mobile v0.1` milestone contains the six parent epics and claimable orchestrator issue #68.
 
 ## Starting a swarm
 
@@ -34,6 +37,7 @@ The coordinator lists work that is genuinely available:
 ```bash
 gh issue list \
   --repo nuri-com/bitwarden-passkey-prf \
+  --label priority:mvp-critical \
   --label status:ready \
   --label parallel-safe \
   --state open \
@@ -49,6 +53,8 @@ Launch one agent per returned issue, constrained by available compute slots. Giv
 - the instruction to follow this repository's `AGENTS.md` plus the target repository's own instructions.
 
 With four execution slots, run one coordinator and three issue agents. With a larger runner, start every `status:ready` ticket whose expected file set does not overlap another claimed ticket.
+
+Exactly one coordinator first claims #68. It is the sole exception to the `parallel-safe` claim rule. Do not claim `priority:post-proof` work before #45 closes unless a concrete blocker proves it is required and the dependency graph is updated with that evidence.
 
 ## Claim protocol
 

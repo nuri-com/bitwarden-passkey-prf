@@ -6,22 +6,24 @@ Preserve the same PRF-capable passkey from Apple Passwords through Bitwarden iOS
 
 The stored object is the passkey, including its provider-internal PRF/HMAC seed state. Evaluated PRF outputs are computed during authorized ceremonies and are never persisted.
 
+The immediate target is a working physical-device proof, not a polished or generally complete password-manager release. Start at [issue #68](https://github.com/nuri-com/bitwarden-passkey-prf/issues/68); it is the claimable orchestrator task and the authoritative proof-first scope.
+
 ## GitHub structure
 
 | Milestone | Tickets | Gate |
 | --- | ---: | --- |
-| [Program — Mobile v0.1](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/1) | 6 epics + [coordinator](https://github.com/nuri-com/bitwarden-passkey-prf/issues/68) | Program-level outcome and progress roll-up |
+| [Program — Mobile v0.1](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/1) | 6 epics + [claimable orchestrator](https://github.com/nuri-com/bitwarden-passkey-prf/issues/68) | Program-level outcome and proof-first execution |
 | [M0 — Contract & Harness](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/2) | 11 | Frozen vectors, platform contracts, baseline builds, and a secret-safe continuity harness |
-| [M1 — Portable Credential Core](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/3) | 12 | CXF import through encrypted sync, reload, arbitrary-input PRF assertion, and CXF export |
+| [M1 — Portable Credential Core](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/3) | 12 | MVP gate: CXF import through encrypted sync, reload, and arbitrary-input PRF assertion; export follows after proof |
 | [M2 — iOS + Android Integrations](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/4) | 12 | Both platform transports preserve and use the shared credential correctly |
 | [M3 — Mobile v0.1 E2E](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/5) | 7 | Real Apple-to-fresh-Android Nuri recovery with release-like builds |
 | [M4 — Upstream Delivery](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/6) | 7 | Focused server, SDK, iOS, and Android contributions submitted upstream |
 
 Milestones are integration gates, not rigid time boxes. A later-milestone ticket can start as soon as every explicit dependency closes.
 
-## Initial parallel wave
+## Initial proof-first parallel wave
 
-These ten tickets have no dependencies and can be assigned immediately to ten independent agents:
+These nine `priority:mvp-critical` tickets have no dependencies and can be assigned immediately to independent agents:
 
 - [#7 — Synthetic CXF and PRF vectors](https://github.com/nuri-com/bitwarden-passkey-prf/issues/7)
 - [#56 — Encrypted extension-state and mixed-version contract](https://github.com/nuri-com/bitwarden-passkey-prf/issues/56)
@@ -32,13 +34,12 @@ These ten tickets have no dependencies and can be assigned immediately to ten in
 - [#16 — Nuri WebView third-party provider proof](https://github.com/nuri-com/bitwarden-passkey-prf/issues/16)
 - [#13 — Android Digital Asset Links verification](https://github.com/nuri-com/bitwarden-passkey-prf/issues/13)
 - [#59 — Secret lifetime, logging, and export constraints](https://github.com/nuri-com/bitwarden-passkey-prf/issues/59)
-- [#12 — Bitwarden maintainer engagement brief](https://github.com/nuri-com/bitwarden-passkey-prf/issues/12)
-
 The live ready queue is always authoritative:
 
 ```bash
 gh issue list \
   --repo nuri-com/bitwarden-passkey-prf \
+  --label priority:mvp-critical \
   --label status:ready \
   --label parallel-safe \
   --state open \
@@ -58,25 +59,28 @@ Nuri recovery/WebView/DAL ------------------------------------------------+     
                                                                                                      +-> upstream PR lanes
 ```
 
-Expected safe concurrency:
+Expected safe concurrency before the first device proof:
 
-- M0: up to 10 agents immediately.
+- M0: up to 9 implementation agents immediately, plus one coordinator.
 - M1: four to six agents across server, SDK model, CXF mappings, evaluator, validation, and security tests.
 - M2: six to eight agents across independent iOS, Android, Nuri, and QA branches.
-- M3: three to four agents for builds, Apple import, cross-device proof, and negative testing; golden recovery remains a serial gate.
-- M4: server, SDK, iOS, and Android PR preparation can overlap when their code dependencies are stable.
+- M3: iOS build/import and Android build/provider work can overlap; exact cross-device continuity and golden recovery remain serial gates.
+- M4 and broad hardening remain parked until the golden recovery gate is green.
 
 ## Critical path
 
 1. Freeze the synthetic vectors and encrypted credential contract.
 2. Add optional encrypted extension state through server, SDK, and bindings.
-3. Preserve CXF import/export and enable arbitrary-input PRF evaluation.
+3. Preserve CXF import and enable arbitrary-input PRF evaluation.
 4. Pass the shared-core portability gate.
 5. Complete iOS and Android platform integrations in parallel.
 6. Import from Apple Passwords and sync the exact credential to Android.
 7. Complete the wiped-Android Nuri golden journey.
-8. Run the negative/security matrix and publish the operator evidence bundle.
-9. Submit generic, focused changes to Bitwarden upstream.
+8. Only after the working proof, run broad hardening, add export paths, and prepare focused upstream contributions.
+
+## Deliberately parked work
+
+Tickets carrying `priority:post-proof` must not delay the first installable iOS/Android proof. They cover Bitwarden CXF export, creation of new PRF passkeys inside Bitwarden, iOS export, broad Android lifecycle testing, the full negative/rollback matrix, operator documentation, and upstream issue/PR packaging. Cosmetic UI work, desktop support, provider matrices, speculative refactors, and broad algorithm support are outside the proof-first queue entirely.
 
 ## Definition of a swarm-ready ticket
 

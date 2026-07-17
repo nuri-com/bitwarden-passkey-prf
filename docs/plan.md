@@ -4,6 +4,19 @@
 
 Deliver testable Bitwarden iOS and Android builds that preserve the same PRF-capable Apple passkey through Credential Exchange and encrypted Bitwarden sync, then evaluate that passkey's PRF extension correctly for Nuri on Android.
 
+## Proof-first execution rule
+
+[Orchestrator issue #68](https://github.com/nuri-com/bitwarden-passkey-prf/issues/68) is authoritative until the first physical-device golden journey in #45 works. Before that gate:
+
+- WP1 requires CXF import, encrypted sync, reload, and PRF preservation; CXF export is postponed.
+- WP2 requires evaluation of imported HMAC state; creation of new PRF passkeys inside Bitwarden is postponed.
+- WP3 is Apple Passwords import only; Bitwarden export and other source providers are postponed.
+- WP4 covers the exact Android/Nuri state needed for one recovery; the broad lifecycle matrix is postponed.
+- WP5 means pinned installable test builds and secret-safe proof, not UI polish, public release automation, or a complete operator package.
+- WP6 and all upstream packaging start only after the fork proof is green.
+
+Only tickets labeled `priority:mvp-critical` enter the pre-proof swarm. This section narrows scheduling; the later work packages remain the longer-term upstream plan.
+
 ## Verified starting point
 
 Bitwarden already has most of the transport surface:
