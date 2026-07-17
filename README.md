@@ -33,6 +33,15 @@ This repository holds the contract, implementation plan, interoperability tests,
 
 Desktop transfer and general non-Nuri interoperability follow after the mobile proof is green.
 
+## Mobile v0.1 backlog
+
+- [WP0 — interoperability harness](https://github.com/nuri-com/bitwarden-passkey-prf/issues/2)
+- [WP1 — complete passkey preservation through CXF and vault sync](https://github.com/nuri-com/bitwarden-passkey-prf/issues/6)
+- [WP2 — on-demand PRF evaluation](https://github.com/nuri-com/bitwarden-passkey-prf/issues/3)
+- [WP3 — Apple Passwords to Bitwarden on iOS](https://github.com/nuri-com/bitwarden-passkey-prf/issues/4)
+- [WP4 — synced Bitwarden passkey in Nuri on Android](https://github.com/nuri-com/bitwarden-passkey-prf/issues/1)
+- [WP5 — mobile test builds and release proof](https://github.com/nuri-com/bitwarden-passkey-prf/issues/5)
+
 ## Status
 
 Planning and upstream gap validation. No production-ready Bitwarden build is published from this repository.
