@@ -23,6 +23,8 @@ This repository holds the contract, implementation plan, interoperability tests,
 - [Nuri compatibility contract](docs/nuri-prf-contract.md)
 - [Interop and release tests](docs/test-plan.md)
 - [Upstream contribution sequence](docs/upstream.md)
+- [Agent-swarm roadmap](docs/roadmap.md)
+- [Swarm operating model](docs/swarm.md)
 
 ## Initial scope
 
@@ -47,7 +49,8 @@ Desktop transfer and general non-Nuri interoperability follow after the mobile p
 Planning and upstream gap validation are complete. The implementation forks are:
 
 - [nuri-com/sdk-internal](https://github.com/nuri-com/sdk-internal)
+- [nuri-com/server](https://github.com/nuri-com/server)
 - [nuri-com/ios](https://github.com/nuri-com/ios)
 - [nuri-com/android](https://github.com/nuri-com/android)
 
-No production-ready Bitwarden build is published yet. The first upstream PR is gated on the WP0 synthetic vectors and a compiling WP1 implementation; a planning-only PR would not be an honest or reviewable Bitwarden contribution.
+The GitHub backlog now contains six parent epics and 49 agent-sized tasks across five delivery milestones. Ten independent discovery tickets are immediately ready for parallel agents. No production-ready Bitwarden build is published yet. The first upstream PR is gated on the synthetic vectors and a compiling shared-core implementation; a planning-only PR would not be an honest or reviewable Bitwarden contribution.
