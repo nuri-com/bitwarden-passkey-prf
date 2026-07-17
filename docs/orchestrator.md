@@ -130,14 +130,14 @@ The following tickets are intentionally labeled `priority:post-proof`: #12, #23,
 
 | Responsibility | Fork | Expected local checkout |
 | --- | --- | --- |
-| Coordination, vectors, evidence | `nuri-com/bitwarden-passkey-prf` | `/Users/eminmahrt/Developer/bitwarden-passkey-prf` |
-| Encrypted server wire state | `nuri-com/server` | `/Users/eminmahrt/Developer/bitwarden-server` |
-| Shared Rust SDK, CXF, authenticator, bindings | `nuri-com/sdk-internal` | `/Users/eminmahrt/Developer/bitwarden-sdk-internal` |
-| Apple Credential Exchange integration | `nuri-com/ios` | `/Users/eminmahrt/Developer/bitwarden-ios` |
-| Android Credential Manager/provider | `nuri-com/android` | `/Users/eminmahrt/Developer/bitwarden-android` |
+| Coordination, vectors, evidence | `nuri-com/bitwarden-passkey-prf` | `/Users/eminmahrt/Developer/nuri-bitwarden/coordination` |
+| Encrypted server wire state | `nuri-com/server` | `/Users/eminmahrt/Developer/nuri-bitwarden/server` |
+| Shared Rust SDK, CXF, authenticator, bindings | `nuri-com/sdk-internal` | `/Users/eminmahrt/Developer/nuri-bitwarden/sdk-internal` |
+| Apple Credential Exchange integration | `nuri-com/ios` | `/Users/eminmahrt/Developer/nuri-bitwarden/ios` |
+| Android Credential Manager/provider | `nuri-com/android` | `/Users/eminmahrt/Developer/nuri-bitwarden/android` |
 | Real relying-party app | `nuri-com/nuri-expo` | `/Users/eminmahrt/Developer/nuri-expo` |
 
-For each Bitwarden clone, `origin` must remain the Nuri fork and `upstream` the corresponding `bitwarden/*` repository. Pin and record base commits before editing. Read this repository's `AGENTS.md` and every target repository's instructions first.
+The umbrella directory `/Users/eminmahrt/Developer/nuri-bitwarden` is intentionally not a Git repository. Put isolated agent worktrees under `/Users/eminmahrt/Developer/nuri-bitwarden/worktrees/<issue>-<slug>`. For each Bitwarden clone, `origin` must remain the Nuri fork and `upstream` the corresponding `bitwarden/*` repository. Pin and record base commits before editing. Read this repository's `AGENTS.md` and every target repository's instructions first.
 
 ## Orchestrator authority and boundaries
 
