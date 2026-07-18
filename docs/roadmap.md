@@ -15,7 +15,7 @@ The immediate target is a working physical-device proof, not a polished or gener
 | [Program — Mobile v0.1](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/1) | 6 epics + [claimable orchestrator](https://github.com/nuri-com/bitwarden-passkey-prf/issues/68) | Program-level outcome and proof-first execution |
 | [M0 — Contract & Harness](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/2) | 11 | Frozen vectors, platform contracts, baseline builds, and a secret-safe continuity harness |
 | [M1 — Portable Credential Core](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/3) | 14 | MVP gate: CXF import through encrypted sync, reload, and arbitrary-input PRF assertion; export follows after proof |
-| [M2 — iOS + Android Integrations](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/4) | 13 | Both platform transports preserve and use the shared credential correctly |
+| [M2 — iOS + Android Integrations](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/4) | 14 | Both platform transports preserve and use the shared credential correctly |
 | [M3 — Mobile v0.1 E2E](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/5) | 7 | Real Apple-to-fresh-Android Nuri recovery with release-like builds |
 | [M4 — Upstream Delivery](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/6) | 7 | Focused server, SDK, iOS, and Android contributions submitted upstream |
 
