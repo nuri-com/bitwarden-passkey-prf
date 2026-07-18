@@ -33,7 +33,8 @@ This PR must not enable runtime PRF evaluation yet.
 Target: `bitwarden/sdk-internal`
 
 - enable PRF/`hmac-secret` in the authenticator configuration;
-- UV and non-UV seed selection;
+- UV-only WebAuthn PRF evaluation, overriding the effective user-verification requirement when necessary;
+- non-UV seed preservation as portable CXF/CTAP state without exposure through WebAuthn `prf.results`;
 - WebAuthn-shaped outputs;
 - secret-lifetime hardening; and
 - deterministic extension tests replacing the current "PRF is not evaluated" expectation.

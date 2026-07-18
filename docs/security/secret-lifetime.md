@@ -15,8 +15,8 @@ Secrets in scope, in descending order of blast radius:
 | Secret | Type | Lifetime class | Why critical |
 | --- | --- | --- | --- |
 | PRF result / evaluated `hmac-secret` output | 32-byte symmetric secret | Ephemeral | Directly becomes the Nuri wallet root key. Leaking it leaks every derived wallet key. |
-| `hmac-secret` seed, user-verified (`cred_with_uv`) | >= 32 bytes | Persisted, encrypted | Produces every PRF output for UV ceremonies. Changing it changes the wallet. |
-| `hmac-secret` seed, non-user-verified (`cred_without_uv`) | >= 32 bytes | Persisted, encrypted | Produces every PRF output for non-UV ceremonies. Nuri requires UV, so this is not used for the wallet, but it is still a portable secret that must round-trip. |
+| `hmac-secret` seed, user-verified (`cred_with_uv`) | >= 32 bytes | Persisted, encrypted | Sole HMAC function exposed through WebAuthn `prf`; changing it changes the wallet. |
+| `hmac-secret` seed, non-user-verified (`cred_without_uv`) | >= 32 bytes | Persisted, encrypted | Portable CXF/CTAP state for provider-internal non-UV `hmac-secret` operations; never a WebAuthn PRF output. |
 | FIDO2 signing private key (`key_value`) | COSE / PKCS8 bytes | Persisted, encrypted | Authenticates to `nuri.com`. Extraction enables impersonation without the device. |
 | PRF input salt (`nuri-prf-salt-v1`) | UTF-8 string | Public, fixed | Not secret per se, but its exact bytes are load-bearing. Mishandling produces a different wallet. |
 | Derived Nuri wallet sub-keys (Bitcoin/Ethereum/Nostr/SwapKit roots) | 32-byte symmetric secrets | Ephemeral | Derived downstream from the PRF result inside Nuri. Out of scope for Bitwarden code, but listed because their secrecy depends on the PRF result never being logged. |
@@ -50,7 +50,7 @@ The table below traces each in-scope secret through five stages: intake (where i
 
 ### `hmac-secret` seed, non-user-verified (`cred_without_uv`)
 
-Same lifecycle as the UV seed. Nuri always requires UV, so this seed is never selected for the Nuri wallet path, but it must round-trip through CXF and sync unchanged so that the same passkey remains portable for other relying parties. It must never be used to evaluate a PRF when UV was required but unavailable; fail closed instead.
+Same lifecycle as the UV seed. It must round-trip through CXF and sync unchanged as portable CTAP `hmac-secret` state, but it is only available to provider-internal/direct CTAP operations without UV. WebAuthn `prf` always exposes the user-verified function, overriding the effective user-verification requirement when necessary; if UV cannot be completed, fail closed rather than substituting this seed.
 
 ### FIDO2 signing private key (`key_value`)
 
@@ -189,7 +189,7 @@ Server-side residual risk: the server never sees plaintext seeds, so the only le
 1. The PRF result is ephemeral. No fork may persist it, cache it, or store it on a long-lived object.
 2. The HMAC seeds are persisted only in encrypted form (`EncString` / encrypted cipher blob). The server never sees plaintext.
 3. The normal JSON export always emits `fido2_extensions: None`. Any change to this requires a separate security review and is not part of the MVP.
-4. Fail closed: missing PRF state, missing UV seed when UV is required, unsupported key, or credential mismatch must abort before any wallet state is committed. No fork may synthesize a replacement seed or fall back to a non-UV seed when UV was required.
+4. Fail closed: missing PRF state, missing UV seed for any WebAuthn `prf` evaluation, unsupported key, or credential mismatch must abort before any wallet state is committed. No fork may synthesize a replacement seed or expose the non-UV HMAC function through WebAuthn `prf`; the request must result in effective UV or fail.
 5. Zeroization is defense-in-depth. The global `ZeroizingAllocator` in `bitwarden-crypto` is a backstop; the explicit zeroization points above are the primary controls.
 6. This document contains no real secret values. Every example refers to types, lengths, or synthetic test vectors.
 

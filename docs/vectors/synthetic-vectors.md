@@ -1,4 +1,4 @@
-# Synthetic CXF and WebAuthn PRF conformance vectors
+# Synthetic CXF, WebAuthn PRF, and CTAP hmac-secret conformance vectors
 
 These are frozen, deterministic test vectors for CXF v1 import, signing-key identity, and WebAuthn PRF evaluation. Every key and seed is synthetic and exists only for interoperability tests. Never replace any value with a credential exported from a real account.
 
@@ -37,21 +37,39 @@ The public-key literal is an independent identity oracle. An importer test must 
 | Non-UV HMAC seed (base64url, no padding) | `IiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiI` |
 | Non-UV HMAC seed (hex) | `2222222222222222222222222222222222222222222222222222222222222222` |
 
-## 2. WebAuthn PRF inputs and literal outputs
+CXF carries both CTAP `hmac-secret` functions. They have different roles here:
+
+- `credWithUV` backs the single PRF exposed by the WebAuthn `prf` client extension.
+- `credWithoutUV` is preserved for CXF and CTAP `hmac-secret` interoperability only. It is not a second WebAuthn PRF and its output must never be returned in `prf.results`.
+
+## 2. WebAuthn PRF and CTAP hmac-secret inputs
+
+[WebAuthn Level 3 section 10.1.4](https://www.w3.org/TR/webauthn-3/#prf-extension) specifies one PRF per credential whose behavior is independent of user-verification state. When that PRF is implemented on top of CTAP `hmac-secret`, it **must** use the user-verified function, overriding the request's `userVerification` preference if necessary.
+
+Consequently, there is no such thing as a non-UV WebAuthn PRF result. A provider evaluating `prf.eval` must complete user verification and use `credWithUV`; if it cannot do so, it must not substitute `credWithoutUV` or return that function's value as `prf.results`.
 
 WebAuthn does **not** apply the HMAC directly to the caller's input. Each input is first mapped into the CTAP `hmac-secret` salt domain:
 
 ```text
-mapped_input = SHA-256(UTF-8("WebAuthn PRF") || 0x00 || input)
-output       = HMAC-SHA-256(selected_hmac_seed, mapped_input)
+mapped_input       = SHA-256(UTF-8("WebAuthn PRF") || 0x00 || input)
+webauthn_prf_value = HMAC-SHA-256(credWithUV, mapped_input)
 ```
 
-The authenticator selects the UV seed only when the completed ceremony performed user verification; otherwise it selects the non-UV seed.
+### WebAuthn PRF literal outputs
 
-| Use | Raw input | Mapped input SHA-256 (hex) | UV output (base64url) | Non-UV output (base64url) |
-| --- | --- | --- | --- | --- |
-| `first` | `nuri-prf-salt-v1` | `e65f683d4ba2089db9f81bdb8f272c5d38bed7d9dc53dcb4490a19f9b90539be` | `d8i94nf9OSyRco1LXP3wnUrRte5rCmguP3cURrj06go` | `bC5nGXrEHZvqT8xWOygtFszTXK3xVFxUjKs81mCSZJc` |
-| `second` | `test-salt-2` | `8076487aedac7ce8f6b8afe879a4ce698028be38c9cd9b671d341cc98e7d8493` | `wxVdw-_rf1oJwrVQn-r6p4nqgf_dJgsfBDutwJNqdEY` | `Nt9iqYcDEZ2LEUJqHn-H4uCga23ML6wUTuPmjM95dP4` |
+| Use | Raw input | Mapped input SHA-256 (hex) | WebAuthn PRF output (base64url) |
+| --- | --- | --- | --- |
+| `first` | `nuri-prf-salt-v1` | `e65f683d4ba2089db9f81bdb8f272c5d38bed7d9dc53dcb4490a19f9b90539be` | `d8i94nf9OSyRco1LXP3wnUrRte5rCmguP3cURrj06go` |
+| `second` | `test-salt-2` | `8076487aedac7ce8f6b8afe879a4ce698028be38c9cd9b671d341cc98e7d8493` | `wxVdw-_rf1oJwrVQn-r6p4nqgf_dJgsfBDutwJNqdEY` |
+
+### CTAP hmac-secret non-UV internal literals
+
+The following values exercise `credWithoutUV` directly against the same domain-separated salts. They are low-level CTAP/storage test oracles only. They are **not WebAuthn PRF outputs** and must never appear in `AuthenticationExtensionsPRFOutputs.results`.
+
+| Internal use | Mapped salt SHA-256 (hex) | CTAP non-UV output (base64url) |
+| --- | --- | --- |
+| `first` | `e65f683d4ba2089db9f81bdb8f272c5d38bed7d9dc53dcb4490a19f9b90539be` | `bC5nGXrEHZvqT8xWOygtFszTXK3xVFxUjKs81mCSZJc` |
+| `second` | `8076487aedac7ce8f6b8afe879a4ce698028be38c9cd9b671d341cc98e7d8493` | `Nt9iqYcDEZ2LEUJqHn-H4uCga23ML6wUTuPmjM95dP4` |
 
 The values above are literal test oracles. Production helpers must not calculate the expected side of a conformance assertion.
 
@@ -66,19 +84,21 @@ import hashlib
 import hmac
 
 inputs = (b"nuri-prf-salt-v1", b"test-salt-2")
-seeds = (bytes([0x11]) * 32, bytes([0x22]) * 32)
+uv_seed = bytes([0x11]) * 32
+non_uv_seed = bytes([0x22]) * 32
 
 for value in inputs:
     mapped = hashlib.sha256(b"WebAuthn PRF\x00" + value).digest()
-    outputs = [
-        base64.urlsafe_b64encode(hmac.new(seed, mapped, hashlib.sha256).digest())
-        .rstrip(b"=")
-        .decode()
-        for seed in seeds
-    ]
-    print(value.decode(), mapped.hex(), *outputs)
+    encode = lambda output: base64.urlsafe_b64encode(output).rstrip(b"=").decode()
+    webauthn_prf = encode(hmac.new(uv_seed, mapped, hashlib.sha256).digest())
+    ctap_non_uv_internal = encode(
+        hmac.new(non_uv_seed, mapped, hashlib.sha256).digest()
+    )
+    print(value.decode(), mapped.hex(), webauthn_prf, ctap_non_uv_internal)
 PY
 ```
+
+The last printed column is labeled CTAP non-UV internal state; printing it does not make it a WebAuthn PRF result.
 
 ## 3. Canonical CXF v1 fixture
 
@@ -92,16 +112,19 @@ The canonical JSON is a complete CXF `Header`, not a provider-specific wrapper o
 
 Its item scope is `https://nuri.com`. Optional `credBlob`, `largeBlob`, and payments state are deliberately absent so this fixture proves only the MVP-critical signing and PRF continuity path.
 
+The fixture retains both CXF HMAC seeds byte-for-byte. That storage requirement does not change the WebAuthn boundary: only `credWithUV` backs WebAuthn `prf`, while `credWithoutUV` remains provider-internal CTAP state.
+
 The positive conformance pipeline must verify:
 
 1. CXF parsing accepts the full v1 fixture.
 2. Import preserves credential ID, RP ID, user handle, PKCS#8 signing identity, and both seeds byte-for-byte.
 3. The PKCS#8-derived public key equals the frozen SEC1 public-key literal.
 4. An assertion made with the imported credential verifies with that public key.
-5. `first` and `second` equal the frozen UV literals after a verified ceremony.
-6. The same two inputs equal the frozen non-UV literals after a non-verified ceremony.
-7. Encrypt, decrypt, lock/reload, sync, and key rotation preserve the same identity and outputs.
-8. No evaluated output is present in the stored credential after any ceremony.
+5. A WebAuthn ceremony that evaluates `first` and `second` performs user verification and returns the frozen WebAuthn PRF literals.
+6. A request whose initial `userVerification` preference is `preferred` or `discouraged` still performs UV before returning WebAuthn PRF results; if UV cannot be completed, evaluation fails rather than returning a non-UV value.
+7. A direct internal CTAP test may compare `credWithoutUV` against the frozen non-UV literals, but those literals never cross the WebAuthn `prf.results` boundary.
+8. Encrypt, decrypt, lock/reload, sync, and key rotation preserve the same identity, seeds, WebAuthn PRF outputs, and internal CTAP vectors.
+9. No evaluated output is present in the stored credential after any ceremony.
 
 ## 4. Negative vector recipes
 
@@ -150,5 +173,5 @@ These vectors prove five independent properties:
 1. **Signing identity:** the PKCS#8 key signs assertions verifiable by the frozen public key.
 2. **Byte preservation:** CXF import and encrypted reload preserve IDs, key identity, and seeds exactly.
 3. **On-demand PRF:** two arbitrary inputs produce frozen results, preventing a cached Nuri-only output from passing.
-4. **UV semantics:** UV and non-UV ceremonies select different frozen seeds and outputs.
+4. **UV semantics:** WebAuthn exposes one PRF backed by `credWithUV`; the distinct `credWithoutUV` function remains internal to CTAP/CXF and is never exposed as a WebAuthn PRF result.
 5. **No result persistence:** evaluated outputs are returned only from the authorized ceremony and never enter cipher, sync, JSON export, logs, or artifacts.
