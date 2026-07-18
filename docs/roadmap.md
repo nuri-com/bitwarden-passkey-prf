@@ -14,8 +14,8 @@ The immediate target is a working physical-device proof, not a polished or gener
 | --- | ---: | --- |
 | [Program — Mobile v0.1](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/1) | 6 epics + [claimable orchestrator](https://github.com/nuri-com/bitwarden-passkey-prf/issues/68) | Program-level outcome and proof-first execution |
 | [M0 — Contract & Harness](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/2) | 11 | Frozen vectors, platform contracts, baseline builds, and a secret-safe continuity harness |
-| [M1 — Portable Credential Core](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/3) | 12 | MVP gate: CXF import through encrypted sync, reload, and arbitrary-input PRF assertion; export follows after proof |
-| [M2 — iOS + Android Integrations](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/4) | 12 | Both platform transports preserve and use the shared credential correctly |
+| [M1 — Portable Credential Core](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/3) | 14 | MVP gate: CXF import through encrypted sync, reload, and arbitrary-input PRF assertion; export follows after proof |
+| [M2 — iOS + Android Integrations](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/4) | 13 | Both platform transports preserve and use the shared credential correctly |
 | [M3 — Mobile v0.1 E2E](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/5) | 7 | Real Apple-to-fresh-Android Nuri recovery with release-like builds |
 | [M4 — Upstream Delivery](https://github.com/nuri-com/bitwarden-passkey-prf/milestone/6) | 7 | Focused server, SDK, iOS, and Android contributions submitted upstream |
 
@@ -49,7 +49,7 @@ gh issue list \
 ## Parallel lanes after discovery
 
 ```text
-contracts/vectors +-> official-cloud Cipher.data proof ---+
+contracts/vectors +-> official-cloud Cipher.data proof (#83 + #85) ---+
                   +-> SDK encrypted credential model -----+-> shared portability gate
                   +-> key validation ----------------------+             |
                   +-> passkey-rs PRF evaluator ------------+             |
@@ -73,7 +73,7 @@ Expected safe concurrency before the first device proof:
 2. Add optional encrypted extension state through SDK BlobV1 and bindings, using the existing official-cloud `Cipher.data` field without a custom server deployment.
 3. Preserve CXF import and enable arbitrary-input PRF evaluation.
 4. Pass the shared-core portability gate.
-5. Complete iOS and Android platform integrations in parallel.
+5. Complete iOS blob import (#83) and Android blob transport (#85), then the remaining provider integrations in parallel.
 6. Import from Apple Passwords and sync the exact credential to Android.
 7. Complete the wiped-Android Nuri golden journey.
 8. Only after the working proof, run broad hardening, add export paths, and prepare focused upstream contributions.

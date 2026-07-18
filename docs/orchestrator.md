@@ -108,6 +108,8 @@ That can preserve authentication while silently losing the Nuri wallet root. The
 For the physical MVP, the sync boundary is the existing opaque encrypted `Cipher.data` field on the
 official Bitwarden Cloud. The iOS import must convert the SDK's legacy CXF-import result through the
 normal CiphersClient blob encryptor and fail before upload unless a PRF-capable cipher has `data`.
+The Android fork must decode the top-level field from sync, copy it into SDK `Cipher.data`, retain it
+through cached reload, and include it in create/update requests; this boundary is tracked in #85.
 Use a personal V2/security-state-2 Bitwarden test account. Do not start local Docker or deploy a
 custom Bitwarden backend for this path. The fork server PR is retained only for legacy compatibility
 research and is not an MVP runtime dependency.
@@ -143,7 +145,7 @@ Do only what the golden journey requires:
 5. Validate the imported signing algorithm instead of silently hardcoding a different one.
 6. Bridge stored HMAC state into the authenticator and evaluate arbitrary requested PRF inputs with the correct user-verification seed.
 7. Carry Android PRF request inputs into the SDK and return standards-shaped results to Nuri.
-8. Preserve the credential through real Bitwarden encrypted sync to Android.
+8. Preserve opaque `Cipher.data` byte-for-byte through the updated Android network, SDK-mapping, and cached-sync paths (#85).
 9. Make only the smallest Nuri app changes required for the actual Android provider flow, credential binding, and fail-closed wallet commit boundary.
 10. Produce installable device builds and run the real journey.
 
@@ -262,7 +264,7 @@ GitHub issue dependencies are authoritative. The MVP-critical set is grouped her
 - Contract/harness: #7, #56, #57, #9, #11, #58, #16, #13, #59, #19
 - Portable credential core: #21, #60, #17, #22, #26, #61, #62, #63, #31 (#20 is retained legacy compatibility, not an MVP runtime dependency)
 - iOS import and build: #28, #27, #83, #64, #67, #46
-- Android provider and build: #35, #65, #66, #40, #41, #39, #42
+- Android sync, provider, and build: #85, #35, #65, #66, #40, #41, #39, #42
 - Cross-device proof: #44, then #45
 
 The proof-first sequence is:
@@ -276,7 +278,7 @@ encrypted SDK BlobV1 credential + CXF import + on-demand PRF
                  |
        +---------+---------+
        |                   |
- iOS import/build     Android provider/build
+ iOS import/build     Android data-sync/provider/build (#85)
        |                   |
  Apple real import -> official-cloud Cipher.data sync -> fresh Android Nuri recovery (#45)
 ```

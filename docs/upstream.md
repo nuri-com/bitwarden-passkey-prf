@@ -57,6 +57,7 @@ Depends on PR 1; provider PRF use depends on PR 2.
 Target: `bitwarden/android`
 
 - current AndroidX provider event transport;
+- top-level `Cipher.data` request/response and cached-sync preservation without a custom server;
 - PRF request/output plumbing;
 - locked/offline/process-death coverage; and
 - end-to-end provider tests.

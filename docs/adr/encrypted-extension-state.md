@@ -13,7 +13,7 @@ This ADR fixes the contract for the optional encrypted extension-state fields th
 
 - the existing signing credential remains the source of truth;
 - the PRF/HMAC seed state required to evaluate WebAuthn PRF is preserved byte-for-byte through encrypted sync, lock/unlock, CXF import/export, and language bindings;
-- old Bitwarden clients continue to decode existing credentials without breakage;
+- updated Bitwarden clients continue to decode existing legacy credentials without breakage;
 - ordinary vault JSON export does not disclose PRF seeds;
 - evaluated PRF outputs are never persisted anywhere; and
 - the model stays generic for any PRF-capable relying party, with no Nuri-specific runtime behavior in Bitwarden.
@@ -22,7 +22,7 @@ The contract deliberately mirrors what the CXF `fido2Extensions.hmacCredentials`
 
 ## Decision
 
-Extend Bitwarden's encrypted FIDO2 credential model with a single optional encrypted container that carries PRF/HMAC extension state. The container is part of the cipher's encrypted payload, not a custom field, note, attachment, or Nuri-specific side channel. The new wire fields remain optional for mixed-version vault compatibility. When a valid CXF `hmacCredentials` object is imported, however, both of its functions are present and must be preserved in the encrypted container. Older clients that do not know the container must skip it and continue to operate on the existing signing credential.
+Extend Bitwarden's encrypted FIDO2 credential model with a single optional encrypted container that carries PRF/HMAC extension state. The container is part of the cipher's encrypted payload, not a custom field, note, attachment, or Nuri-specific side channel. The new nested fields are optional so updated clients continue to decode legacy credentials. When a valid CXF `hmacCredentials` object is imported, however, both of its functions are present and must be preserved in the encrypted container. The MVP does not claim that an older BlobV1 client can decrypt, modify, and reseal the new payload without losing unknown nested state; that downgrade boundary is isolated in #73.
 
 The container MUST carry, at minimum:
 
@@ -95,19 +95,27 @@ The mobile MVP uses Bitwarden's existing blob-encrypted `Cipher.data` wire field
 - iOS CXF import MUST pass the imported cipher through the normal SDK CiphersClient blob encryptor before `/ciphers/import`. A PRF-capable import that does not produce `Cipher.data` MUST fail before upload.
 - The iOS request and sync-response models MUST map `Cipher.data` unchanged and accept the blob response's optional legacy `name`; a forced post-import sync must not replace the blob with `nil`.
 - The blob request MUST NOT also send extension state through legacy structured `login.fido2Credentials` fields.
-- Sync, backup, and rotation paths carry the container because they already carry the opaque encrypted cipher body.
+- Only updated client paths proven to forward `Cipher.data` unchanged are in the MVP: iOS import,
+  request, and response mapping in #83, plus Android request, response, and cached-sync mapping in
+  #85. Backup, key rotation, and mixed-version resealing are not assumed safe merely because the
+  outer field is opaque; those broader guarantees remain in #73.
 
 The controlled MVP therefore requires updated iOS and Android forks and a blob-capable personal V2 account, but no local Docker server or Nuri backend deployment. The fork-only legacy server DTO remains compatibility research for field-level/V1 clients and is not part of the first device proof. This keeps the server out of the PRF trust boundary and avoids a Nuri-specific production server surface.
 
 ### 5. Re-encryption behavior
 
-The container MUST survive every encrypt/decrypt/sync cycle unchanged:
+On the pinned updated mobile forks, the container MUST survive the exact encrypt/decrypt/sync cycle
+used by the golden journey unchanged:
 
 - Encrypting a decrypted credential that contains extension state produces the same extension state after re-encryption. Byte-for-byte preservation is required for the seeds, credential ID, user handle, and RP ID.
 - Decryption on a new client or after vault reload yields the same container that was encrypted.
-- Lock/unlock, vault sync, and migration across Bitwarden server/SDK versions preserve the container.
-- A round trip of `CXF -> Bitwarden cipher -> encrypted sync -> decrypt -> CXF` preserves the signing key, credential ID, RP ID, user handle, and both PRF seeds byte-for-byte.
-- A round trip of `decrypt -> encrypt -> decrypt` yields the same container, regardless of whether the intermediate encrypt used a new account key, rotated org key, or sync-rotation path.
+- Lock/unlock and ordinary vault sync on the pinned updated clients preserve the container.
+- A round trip of `CXF -> pinned iOS import -> official-cloud Cipher.data sync -> pinned Android decrypt` preserves the signing key, credential ID, RP ID, user handle, and both PRF seeds byte-for-byte.
+- A focused `decrypt -> normal personal-V2 encrypt -> decrypt` round trip on the pinned SDK yields the same container.
+
+Migration across arbitrary server/SDK versions, account-key rotation, organization-key rotation, and
+old-client decrypt/reseal paths are not part of this MVP claim. They remain fail-closed follow-up
+work in #73 and must not be inferred from the opaque server transport alone.
 
 If any field would be mutated by re-encryption, the round trip MUST fail closed rather than silently producing a different wallet.
 

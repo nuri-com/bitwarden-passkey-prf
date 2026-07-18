@@ -40,6 +40,7 @@ Until golden recovery issue #45 is green, run the golden journey plus only the f
 - A second arbitrary test salt also produces stable output, proving preservation of the passkey's PRF seed rather than caching one Nuri result.
 - Vault inspection and round-trip tests prove that evaluated PRF outputs are not persisted.
 - The iOS import request contains opaque `Cipher.data`, omits the legacy structured login payload for that item, and fails before upload if a PRF import cannot produce a blob; the sync response decodes the same opaque `data` without requiring legacy `name`.
+- Android decodes an official-server-shaped response with `data` present and legacy `name`/`login` absent, preserves the exact ciphertext through SDK mapping and cached reload, and includes it unchanged in any create/update request; the fixture contains no nested `extensionState`.
 - Selecting the wrong `nuri.com` passkey is detected before local wallet state is committed.
 - Normal Bitwarden JSON export does not unexpectedly disclose PRF seeds.
 - Logs and crash artifacts contain lengths/status only, never secret bytes.

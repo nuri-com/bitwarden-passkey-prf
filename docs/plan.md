@@ -58,8 +58,9 @@ For the first mobile proof, the complete credential is nested in Bitwarden's exi
 must re-encrypt imported PRF ciphers through the normal CiphersClient blob path and fail before
 upload if no blob is produced. Its request and sync-response mappings must preserve `Cipher.data`
 unchanged and accept the blob response's optional legacy `name`. The MVP is limited to a
-blob-capable personal V2 account. The fork-only legacy server field is not deployed and no local
-Docker server is required.
+blob-capable personal V2 account. Android must likewise preserve top-level `Cipher.data` through
+its sync DTO, SDK mapping, cached reload, and create/update request mapping (#85). The fork-only
+legacy server field is not deployed and no local Docker server is required.
 
 ## Work packages
 
@@ -107,6 +108,7 @@ Exit gate: an Apple-created Nuri passkey is imported into Bitwarden and the Bitw
 
 ### WP4 — Android Bitwarden provider and Nuri recovery
 
+- Preserve official-cloud top-level `Cipher.data` byte-for-byte through network decoding, SDK mapping, cached reload, and create/update requests.
 - Complete Android provider import/export wiring required by the supported Credential Manager version.
 - Pass PRF extension inputs from Android/WebView requests to the shared authenticator.
 - Return PRF outputs through the Android credential-provider response.
