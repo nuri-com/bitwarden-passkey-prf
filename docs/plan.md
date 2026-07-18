@@ -53,6 +53,14 @@ All new fields must remain optional so existing vaults and clients continue to d
 
 Together with the existing signing key, credential ID, RP ID, and user handle, these fields are the portable passkey. Syncing only the signing key produces a credential that may authenticate but cannot reproduce the original PRF behavior.
 
+For the first mobile proof, the complete credential is nested in Bitwarden's existing blob-encrypted
+`Cipher.data` field and synced through the unchanged official Bitwarden Cloud. The iOS CXF importer
+must re-encrypt imported PRF ciphers through the normal CiphersClient blob path and fail before
+upload if no blob is produced. Its request and sync-response mappings must preserve `Cipher.data`
+unchanged and accept the blob response's optional legacy `name`. The MVP is limited to a
+blob-capable personal V2 account. The fork-only legacy server field is not deployed and no local
+Docker server is required.
+
 ## Work packages
 
 ### WP0 — Reproducible interop harness
@@ -67,13 +75,13 @@ Exit gate: the harness distinguishes signature continuity from PRF continuity wi
 ### WP1 — Bitwarden encrypted credential model and CXF round trip
 
 - Extend the shared FIDO credential model with optional extension state.
-- Preserve the fields through encryption, decryption, sync, import, export, and language bindings.
+- Preserve the fields through encryption, decryption, official-cloud `Cipher.data` sync, import, export, and language bindings.
 - Map CXF `fido2Extensions.hmacCredentials` in both directions.
 - Preserve unknown-but-valid optional extension data where the model permits it.
 - Reject unsupported signing keys explicitly instead of labeling every imported key ECDSA P-256.
 - Keep ordinary vault JSON export behavior unchanged unless separately reviewed.
 
-Exit gate: `CXF -> Bitwarden cipher -> encrypted round trip -> CXF` preserves the signing key, credential ID, RP ID, user handle, and both PRF seeds byte-for-byte.
+Exit gate: `CXF -> Bitwarden Cipher.data blob -> official-cloud sync -> decrypt -> CXF` preserves the signing key, credential ID, RP ID, user handle, and both PRF seeds byte-for-byte.
 
 ### WP2 — Stored-passkey PRF authenticator
 
@@ -171,7 +179,7 @@ iOS import/provider   Android provider
 | --- | --- |
 | Exporter omits PRF seeds | Detect and report incompatibility; never synthesize a replacement wallet root. |
 | Android provider API changes | Pin the AndroidX version and isolate platform transport from CXF/core logic. |
-| Bitwarden model change breaks older clients | Use optional encrypted fields and add mixed-version fixtures. |
+| Bitwarden model change breaks older clients | Limit the MVP to updated forks plus a personal V2 blob account; complete the general BlobV1 downgrade boundary in post-proof issue #73. |
 | PRF implementation differs by provider | Use FIDO/CXF vectors and byte-for-byte output tests. |
 | WebView bypasses the chosen provider | Test on the exact Nuri WebView/Credential Manager path, not only a browser demo. |
 | Upstream PR is too broad | Submit dependent PRs by repository and layer with independent tests. |

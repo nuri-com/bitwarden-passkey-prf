@@ -56,4 +56,8 @@ Planning and upstream gap validation are complete. The implementation forks are:
 - [nuri-com/ios](https://github.com/nuri-com/ios)
 - [nuri-com/android](https://github.com/nuri-com/android)
 
+The first device proof uses the existing opaque encrypted `Cipher.data` transport on the official
+Bitwarden Cloud. `nuri-com/server` is retained for legacy-format compatibility research; no local
+Docker server or Nuri backend deployment is required for the MVP path.
+
 The GitHub backlog contains six parent epics, 49 agent-sized implementation tasks, and one claimable orchestrator task across five delivery milestones. Nine MVP-critical discovery tickets are immediately ready for parallel agents. The first goal is an installable real-device iOS-to-Android proof; export-back-out, desktop, broad providers, polish, full hardening, and upstream PR packaging follow only after that proof is green. No production-ready Bitwarden build is published yet.

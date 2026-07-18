@@ -49,8 +49,8 @@ gh issue list \
 ## Parallel lanes after discovery
 
 ```text
-                  +-> server encrypted wire model --------+
-contracts/vectors +-> SDK encrypted credential model -----+-> shared portability gate
+contracts/vectors +-> official-cloud Cipher.data proof ---+
+                  +-> SDK encrypted credential model -----+-> shared portability gate
                   +-> key validation ----------------------+             |
                   +-> passkey-rs PRF evaluator ------------+             |
                                                                           +-> iOS import/export ----+
@@ -62,7 +62,7 @@ Nuri recovery/WebView/DAL ------------------------------------------------+     
 Expected safe concurrency before the first device proof:
 
 - M0: up to 9 implementation agents immediately, plus one coordinator.
-- M1: four to six agents across server, SDK model, CXF mappings, evaluator, validation, and security tests.
+- M1: four to six agents across the official-cloud blob boundary, SDK model, CXF mappings, evaluator, validation, and security tests.
 - M2: six to eight agents across independent iOS, Android, Nuri, and QA branches.
 - M3: iOS build/import and Android build/provider work can overlap; exact cross-device continuity and golden recovery remain serial gates.
 - M4 and broad hardening remain parked until the golden recovery gate is green.
@@ -70,7 +70,7 @@ Expected safe concurrency before the first device proof:
 ## Critical path
 
 1. Freeze the synthetic vectors and encrypted credential contract.
-2. Add optional encrypted extension state through server, SDK, and bindings.
+2. Add optional encrypted extension state through SDK BlobV1 and bindings, using the existing official-cloud `Cipher.data` field without a custom server deployment.
 3. Preserve CXF import and enable arbitrary-input PRF evaluation.
 4. Pass the shared-core portability gate.
 5. Complete iOS and Android platform integrations in parallel.

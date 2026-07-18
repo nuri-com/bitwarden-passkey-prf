@@ -6,12 +6,12 @@ Until golden recovery issue #45 is green, run the golden journey plus only the f
 
 ## Golden journey
 
-1. Start with a clean iOS 26 device and a Nuri test account.
+1. Start with a clean iOS 26 device, a Nuri test account, and a personal Bitwarden test account whose verified security state enables cipher blob encryption (V2/version 2).
 2. Select Apple Passwords as the passkey provider.
 3. Create the Nuri passkey and wallet.
 4. Record the credential ID fingerprint and public Bitcoin, Ethereum, Nostr, and SwapKit test identities.
 5. Export the credential from Apple Passwords to the test Bitwarden build using Credential Exchange.
-6. Lock and unlock Bitwarden, force a vault sync, and verify the item remains usable on iOS.
+6. Confirm the import uploaded an opaque `Cipher.data` item through the official Bitwarden Cloud (not a custom server or legacy structured extension field), then lock/unlock, force a vault sync, and verify the item remains usable on iOS.
 7. Start with a clean Android device or work profile containing no Nuri local keys.
 8. Install the matching Bitwarden test build, sync the vault, and enable Bitwarden as the passkey provider.
 9. Install Nuri and choose the existing-wallet/passkey path.
@@ -39,6 +39,7 @@ Until golden recovery issue #45 is green, run the golden journey plus only the f
 - The production salt produces the same derived public identities on both platforms.
 - A second arbitrary test salt also produces stable output, proving preservation of the passkey's PRF seed rather than caching one Nuri result.
 - Vault inspection and round-trip tests prove that evaluated PRF outputs are not persisted.
+- The iOS import request contains opaque `Cipher.data`, omits the legacy structured login payload for that item, and fails before upload if a PRF import cannot produce a blob; the sync response decodes the same opaque `data` without requiring legacy `name`.
 - Selecting the wrong `nuri.com` passkey is detected before local wallet state is committed.
 - Normal Bitwarden JSON export does not unexpectedly disclose PRF seeds.
 - Logs and crash artifacts contain lengths/status only, never secret bytes.

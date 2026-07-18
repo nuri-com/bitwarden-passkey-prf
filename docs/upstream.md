@@ -6,7 +6,7 @@ This coordination repository remains independent. Create GitHub forks only when 
 
 | Upstream | Planned fork | Purpose |
 | --- | --- | --- |
-| `bitwarden/server` | `nuri-com/server` | optional encrypted FIDO2 request, data, sync, and compatibility models |
+| `bitwarden/server` | `nuri-com/server` | optional legacy field-level compatibility research; not required by the BlobV1 MVP |
 | `bitwarden/sdk-internal` | `nuri-com/sdk-internal` | encrypted model, CXF mappings, PRF authenticator |
 | `bitwarden/ios` | `nuri-com/ios` | Apple Credential Exchange and provider integration |
 | `bitwarden/android` | `nuri-com/android` | Android provider transport and integration |
@@ -46,6 +46,7 @@ Depends on PR 1.
 Target: `bitwarden/ios`
 
 - prove `ASImportableFIDO2Extensions` survives the Swift-to-SDK boundary;
+- re-encrypt PRF imports into the existing opaque `Cipher.data` blob and fail closed when the account cannot produce it;
 - user-visible unsupported-credential reporting; and
 - Apple Passwords/1Password fixtures and integration tests.
 
