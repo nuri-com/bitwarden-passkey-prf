@@ -22,13 +22,13 @@ The contract deliberately mirrors what the CXF `fido2Extensions.hmacCredentials`
 
 ## Decision
 
-Extend Bitwarden's encrypted FIDO2 credential model with a single optional encrypted container that carries PRF/HMAC extension state. The container is part of the cipher's encrypted payload, not a custom field, note, attachment, or Nuri-specific side channel. All new fields are optional. Older clients that do not know the container must skip it and continue to operate on the existing signing credential.
+Extend Bitwarden's encrypted FIDO2 credential model with a single optional encrypted container that carries PRF/HMAC extension state. The container is part of the cipher's encrypted payload, not a custom field, note, attachment, or Nuri-specific side channel. The new wire fields remain optional for mixed-version vault compatibility. When a valid CXF `hmacCredentials` object is imported, however, both of its functions are present and must be preserved in the encrypted container. Older clients that do not know the container must skip it and continue to operate on the existing signing credential.
 
 The container MUST carry, at minimum:
 
 1. **PRF/HMAC algorithm** — the algorithm identifier needed to validate that the stored signing key and HMAC seed match the actual imported credential, rather than assuming ES256. This enables explicit rejection of unsupported keys instead of silent mislabeling.
 2. **User-verified HMAC seed** — the sole HMAC function exposed through WebAuthn `prf.eval.first`/`prf.eval.second`; the effective user-verification requirement is overridden when necessary.
-3. **Non-user-verified HMAC seed** — portable CTAP `hmac-secret` state used only by provider-internal/direct CTAP operations without user verification. It may be absent and must never be exposed through WebAuthn `prf.results`.
+3. **Non-user-verified HMAC seed** — portable CTAP `hmac-secret` state used only by provider-internal/direct CTAP operations without user verification. It is required and preserved when sourced from CXF `hmacCredentials`; it may be absent only on legacy or non-CXF internal credentials and must never be exposed through WebAuthn `prf.results`.
 4. **Optional `credBlob`** — preserved only when the imported credential actually carries it.
 5. **Optional `largeBlob`** — preserved only when the imported credential actually carries it.
 6. **Key metadata for algorithm validation** — enough metadata to validate the imported signing-key algorithm rather than hardcoding ECDSA P-256. This exists to make algorithm mismatches explicit instead of silently relabeling keys.
@@ -52,7 +52,7 @@ These four invariants plus the optional extension container together form the po
 | --- | --- | --- |
 | `prf_hmac_algorithm` | yes, when extension state is present | Algorithm identifier used to validate the signing key and select PRF/HMAC evaluation |
 | `uv_hmac_seed` | yes, when extension state is present | User-verified HMAC seed; the sole HMAC function exposed through WebAuthn `prf` |
-| `non_uv_hmac_seed` | optional | Portable non-UV CTAP `hmac-secret` state; preserved for CXF/internal CTAP use, never exposed through WebAuthn `prf` |
+| `non_uv_hmac_seed` | required for CXF `hmacCredentials`; optional for legacy/non-CXF internal state | Portable non-UV CTAP `hmac-secret` state; preserved for CXF/internal CTAP use, never exposed through WebAuthn `prf` |
 | `cred_blob` | optional | FIDO2 `credBlob` if present on the imported credential |
 | `large_blob` | optional | FIDO2 `largeBlob` if present on the imported credential |
 | `key_algorithm_metadata` | yes, when extension state is present | Metadata sufficient to validate the signing-key algorithm instead of hardcoding ECDSA P-256 |
@@ -60,6 +60,8 @@ These four invariants plus the optional extension container together form the po
 The container is absent on existing passkey ciphers and on any passkey that does not carry PRF/HMAC extension state. Absence is distinct from an empty container and MUST be preserved through round trips.
 
 Per [WebAuthn Level 3 section 10.1.4](https://www.w3.org/TR/webauthn-3/#prf-extension), the WebAuthn client extension exposes one PRF per credential. An implementation backed by CTAP `hmac-secret` MUST use the user-verified function and override the effective `userVerification` preference if necessary; it MUST NOT choose between the two stored HMAC functions based on the assertion's initial UV preference.
+
+Per the [CXF FIDO2 HMAC Credentials section](https://fidoalliance.org/specs/cx/cxf-v1.0-ps-errata-20260309.html#fido2hmaccredentials), a valid `Fido2HmacCredentials` exchange object contains both `credWithUV` and `credWithoutUV`. Import must therefore retain both byte-for-byte. A future CXF exporter starting from a legacy/internal credential that stores only one function must create the missing stable function before exchange as required by CXF; it must not emit a one-function `hmacCredentials` object.
 
 ### 2. Passkey identity invariants
 
@@ -74,7 +76,7 @@ A credential that survives a round trip with any of these changed is a different
 
 ### 3. Old-client downgrade behavior
 
-All new fields are optional. The following downgrade rules apply:
+All new wire fields are optional for mixed-version decoding. The following downgrade rules apply; they do not relax the two-function requirement for a CXF `hmacCredentials` object:
 
 - An older client that does not know the extension container MUST still decode the signing credential, credential ID, RP ID, and user handle, and operate normally for authentication.
 - An older client MUST skip the unknown encrypted container rather than rejecting the cipher, dropping it, or re-encrypting a different value in its place.
