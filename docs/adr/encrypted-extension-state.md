@@ -27,8 +27,8 @@ Extend Bitwarden's encrypted FIDO2 credential model with a single optional encry
 The container MUST carry, at minimum:
 
 1. **PRF/HMAC algorithm** — the algorithm identifier needed to validate that the stored signing key and HMAC seed match the actual imported credential, rather than assuming ES256. This enables explicit rejection of unsupported keys instead of silent mislabeling.
-2. **User-verified HMAC seed** — the seed used to evaluate `prf.eval.first`/`prf.eval.second` after a user-verified ceremony.
-3. **Non-user-verified HMAC seed** — the seed used when user verification was not performed. May be absent. Selection between the UV and non-UV seed is the authenticator's responsibility at evaluation time.
+2. **User-verified HMAC seed** — the sole HMAC function exposed through WebAuthn `prf.eval.first`/`prf.eval.second`; the effective user-verification requirement is overridden when necessary.
+3. **Non-user-verified HMAC seed** — portable CTAP `hmac-secret` state used only by provider-internal/direct CTAP operations without user verification. It may be absent and must never be exposed through WebAuthn `prf.results`.
 4. **Optional `credBlob`** — preserved only when the imported credential actually carries it.
 5. **Optional `largeBlob`** — preserved only when the imported credential actually carries it.
 6. **Key metadata for algorithm validation** — enough metadata to validate the imported signing-key algorithm rather than hardcoding ECDSA P-256. This exists to make algorithm mismatches explicit instead of silently relabeling keys.
@@ -51,13 +51,15 @@ These four invariants plus the optional extension container together form the po
 | Field | Required | Purpose |
 | --- | --- | --- |
 | `prf_hmac_algorithm` | yes, when extension state is present | Algorithm identifier used to validate the signing key and select PRF/HMAC evaluation |
-| `uv_hmac_seed` | yes, when extension state is present | User-verified HMAC seed, used when UV was performed |
-| `non_uv_hmac_seed` | optional | Non-UV HMAC seed, used when UV was not performed |
+| `uv_hmac_seed` | yes, when extension state is present | User-verified HMAC seed; the sole HMAC function exposed through WebAuthn `prf` |
+| `non_uv_hmac_seed` | optional | Portable non-UV CTAP `hmac-secret` state; preserved for CXF/internal CTAP use, never exposed through WebAuthn `prf` |
 | `cred_blob` | optional | FIDO2 `credBlob` if present on the imported credential |
 | `large_blob` | optional | FIDO2 `largeBlob` if present on the imported credential |
 | `key_algorithm_metadata` | yes, when extension state is present | Metadata sufficient to validate the signing-key algorithm instead of hardcoding ECDSA P-256 |
 
 The container is absent on existing passkey ciphers and on any passkey that does not carry PRF/HMAC extension state. Absence is distinct from an empty container and MUST be preserved through round trips.
+
+Per [WebAuthn Level 3 section 10.1.4](https://www.w3.org/TR/webauthn-3/#prf-extension), the WebAuthn client extension exposes one PRF per credential. An implementation backed by CTAP `hmac-secret` MUST use the user-verified function and override the effective `userVerification` preference if necessary; it MUST NOT choose between the two stored HMAC functions based on the assertion's initial UV preference.
 
 ### 2. Passkey identity invariants
 

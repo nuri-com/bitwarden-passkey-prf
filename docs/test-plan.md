@@ -27,7 +27,7 @@ Until golden recovery issue #45 is green, run the golden journey plus only the f
 | iOS state | Bitwarden unlocked, locked, backgrounded, after reboot |
 | Android state | unlocked, locked, offline after sync, process killed, after reboot |
 | Request | constrained credential ID, discoverable selection |
-| User verification | required and performed; missing verification must not use the UV seed |
+| User verification | WebAuthn PRF evaluation performs effective UV; if verification cannot complete, no PRF result is returned |
 | Vault | fresh import, duplicate item, multiple `nuri.com` passkeys |
 | Failure | no PRF extension, missing UV seed, malformed seed, changed credential ID, unsupported key, sync conflict |
 

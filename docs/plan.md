@@ -78,7 +78,8 @@ Exit gate: `CXF -> Bitwarden cipher -> encrypted round trip -> CXF` preserves th
 ### WP2 — Stored-passkey PRF authenticator
 
 - Enable WebAuthn PRF/CTAP `hmac-secret` processing in `bitwarden-fido`.
-- Select the correct seed based on whether user verification was performed.
+- Evaluate WebAuthn `prf` only with the user-verified HMAC function, overriding the effective user-verification requirement when necessary.
+- Preserve the non-UV HMAC seed as portable CXF/CTAP state, but never expose its output through WebAuthn `prf.results`.
 - Return standards-shaped `prf.results.first` and optional `second` outputs.
 - Implement creation behavior for new Bitwarden-hosted passkeys so future exports are portable too.
 - Zeroize temporary seeds, salts, and outputs where the surrounding Rust and native boundaries allow it.
