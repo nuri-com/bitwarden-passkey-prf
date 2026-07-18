@@ -13,7 +13,7 @@ This ADR fixes the contract for the optional encrypted extension-state fields th
 
 - the existing signing credential remains the source of truth;
 - the PRF/HMAC seed state required to evaluate WebAuthn PRF is preserved byte-for-byte through encrypted sync, lock/unlock, CXF import/export, and language bindings;
-- old Bitwarden clients continue to decode existing credentials without breakage;
+- updated Bitwarden clients continue to decode existing legacy credentials without breakage;
 - ordinary vault JSON export does not disclose PRF seeds;
 - evaluated PRF outputs are never persisted anywhere; and
 - the model stays generic for any PRF-capable relying party, with no Nuri-specific runtime behavior in Bitwarden.
@@ -22,7 +22,7 @@ The contract deliberately mirrors what the CXF `fido2Extensions.hmacCredentials`
 
 ## Decision
 
-Extend Bitwarden's encrypted FIDO2 credential model with a single optional encrypted container that carries PRF/HMAC extension state. The container is part of the cipher's encrypted payload, not a custom field, note, attachment, or Nuri-specific side channel. The new wire fields remain optional for mixed-version vault compatibility. When a valid CXF `hmacCredentials` object is imported, however, both of its functions are present and must be preserved in the encrypted container. Older clients that do not know the container must skip it and continue to operate on the existing signing credential.
+Extend Bitwarden's encrypted FIDO2 credential model with a single optional encrypted container that carries PRF/HMAC extension state. The container is part of the cipher's encrypted payload, not a custom field, note, attachment, or Nuri-specific side channel. The new nested fields are optional so updated clients continue to decode legacy credentials. When a valid CXF `hmacCredentials` object is imported, however, both of its functions are present and must be preserved in the encrypted container. The MVP does not claim that an older BlobV1 client can decrypt, modify, and reseal the new payload without losing unknown nested state; that downgrade boundary is isolated in #73.
 
 The container MUST carry, at minimum:
 
@@ -78,8 +78,8 @@ A credential that survives a round trip with any of these changed is a different
 
 All new wire fields are optional for mixed-version decoding. The following downgrade rules apply; they do not relax the two-function requirement for a CXF `hmacCredentials` object:
 
-- An older client that does not know the extension container MUST still decode the signing credential, credential ID, RP ID, and user handle, and operate normally for authentication.
-- An older client MUST skip the unknown encrypted container rather than rejecting the cipher, dropping it, or re-encrypting a different value in its place.
+- An older client that does not know the extension container may be unable to use a PRF-capable blob cipher; it MUST fail rather than replace or silently downgrade the cipher.
+- An older BlobV1-capable client that can decode and reseal the containing blob MUST not silently drop the unknown nested state. The general mixed-version prevention mechanism is post-proof issue #73.
 - An older client MUST NOT synthesize a replacement for missing PRF state. If it cannot evaluate a requested PRF extension, it MUST return no PRF result so that the relying party fails closed.
 - A mixed-version fixture set MUST prove all three paths: old-cipher-decoded-by-new-client, new-cipher-decoded-by-old-client, and new-cipher-decoded-by-new-client.
 
@@ -87,24 +87,35 @@ The contract is intentionally additive. No existing field's encoding, ordering, 
 
 ### 4. Server wire model
 
-The server treats the extension container as opaque encrypted payload. Specifically:
+The mobile MVP uses Bitwarden's existing blob-encrypted `Cipher.data` wire field. Specifically:
 
-- All extension-state fields are serialized inside the cipher's encrypted FIDO2 credential payload before transmission.
-- The server transmits them as encrypted strings, exactly like the existing signing-key material. The server does not parse, validate, or interpret PRF/HMAC seed bytes, algorithm identifiers, or blob contents.
-- No new server-side field, column, or API shape is added for extension state. The wire contract is the existing encrypted FIDO2 credential with the container embedded in its encrypted body.
-- Sync, backup, and rotation paths carry the container because they already carry the encrypted cipher body.
+- The complete FIDO2 credential, including extension state, is serialized inside the versioned cipher blob before transmission.
+- `Cipher.data` is an opaque authenticated-encryption envelope with a top-level `format_version`; the server stores and returns it without parsing the nested credential or PRF/HMAC state.
+- No PRF-specific server field, column, DTO, or API shape is required. The unchanged official Bitwarden Cloud already accepts and returns the existing `Cipher.data` field.
+- iOS CXF import MUST pass the imported cipher through the normal SDK CiphersClient blob encryptor before `/ciphers/import`. A PRF-capable import that does not produce `Cipher.data` MUST fail before upload.
+- The iOS request and sync-response models MUST map `Cipher.data` unchanged and accept the blob response's optional legacy `name`; a forced post-import sync must not replace the blob with `nil`.
+- The blob request MUST NOT also send extension state through legacy structured `login.fido2Credentials` fields.
+- Only updated client paths proven to forward `Cipher.data` unchanged are in the MVP: iOS import,
+  request, and response mapping in #83, plus Android request, response, and cached-sync mapping in
+  #85. Backup, key rotation, and mixed-version resealing are not assumed safe merely because the
+  outer field is opaque; those broader guarantees remain in #73.
 
-This keeps the server out of the PRF trust boundary and avoids introducing a Nuri-specific server surface.
+The controlled MVP therefore requires updated iOS and Android forks and a blob-capable personal V2 account, but no local Docker server or Nuri backend deployment. The fork-only legacy server DTO remains compatibility research for field-level/V1 clients and is not part of the first device proof. This keeps the server out of the PRF trust boundary and avoids a Nuri-specific production server surface.
 
 ### 5. Re-encryption behavior
 
-The container MUST survive every encrypt/decrypt/sync cycle unchanged:
+On the pinned updated mobile forks, the container MUST survive the exact encrypt/decrypt/sync cycle
+used by the golden journey unchanged:
 
 - Encrypting a decrypted credential that contains extension state produces the same extension state after re-encryption. Byte-for-byte preservation is required for the seeds, credential ID, user handle, and RP ID.
 - Decryption on a new client or after vault reload yields the same container that was encrypted.
-- Lock/unlock, vault sync, and migration across Bitwarden server/SDK versions preserve the container.
-- A round trip of `CXF -> Bitwarden cipher -> encrypted sync -> decrypt -> CXF` preserves the signing key, credential ID, RP ID, user handle, and both PRF seeds byte-for-byte.
-- A round trip of `decrypt -> encrypt -> decrypt` yields the same container, regardless of whether the intermediate encrypt used a new account key, rotated org key, or sync-rotation path.
+- Lock/unlock and ordinary vault sync on the pinned updated clients preserve the container.
+- A round trip of `CXF -> pinned iOS import -> official-cloud Cipher.data sync -> pinned Android decrypt` preserves the signing key, credential ID, RP ID, user handle, and both PRF seeds byte-for-byte.
+- A focused `decrypt -> normal personal-V2 encrypt -> decrypt` round trip on the pinned SDK yields the same container.
+
+Migration across arbitrary server/SDK versions, account-key rotation, organization-key rotation, and
+old-client decrypt/reseal paths are not part of this MVP claim. They remain fail-closed follow-up
+work in #73 and must not be inferred from the opaque server transport alone.
 
 If any field would be mutated by re-encryption, the round trip MUST fail closed rather than silently producing a different wallet.
 
@@ -134,8 +145,8 @@ This prohibition is the load-bearing security invariant of the entire contract. 
 ## Consequences
 
 - Bitwarden's encrypted FIDO2 credential becomes the single source of truth for the portable passkey, including its PRF/HMAC extension state.
-- The server remains outside the PRF trust boundary; it carries opaque encrypted strings.
-- Old Bitwarden clients continue to work; they skip the unknown container and fail closed on PRF requests they cannot evaluate.
+- The official server remains outside the PRF trust boundary; it carries the opaque encrypted `Cipher.data` envelope.
+- The first proof is intentionally limited to updated fork clients and a blob-capable personal V2 account. Broader old-client compatibility is a separate post-proof gate.
 - CXF and Bitwarden-internal representations can be mapped bidirectionally without a parallel side channel.
 - Ordinary vault JSON export stays safe for users; PRF seed material never appears in a default export.
 - The same encrypted credential supports any PRF-capable relying party, not only Nuri. Nuri-specific runtime behavior is prohibited in Bitwarden.
@@ -143,6 +154,6 @@ This prohibition is the load-bearing security invariant of the entire contract. 
 
 ## Open questions
 
-1. The exact wire encoding of the container inside the encrypted FIDO2 credential is to be fixed by the SDK PR in `nuri-com/sdk-internal`. This ADR fixes the contract, not the byte layout.
+1. The MVP wire encoding is the existing versioned BlobV1 `Cipher.data` envelope, with optional extension state nested in the encrypted FIDO2 credential. A future new blob version may be required for general old-client downgrade protection in #73.
 2. Whether `credBlob` and `largeBlob` are needed for the first Apple Passwords -> Android journey is to be confirmed by the captured iOS 26 Credential Exchange contract. They remain optional in the model so the contract is forward-compatible.
 3. The explicit review gate for any future encrypted export path that would carry PRF seed material is deferred to the post-proof upstream delivery milestone and is out of scope here.

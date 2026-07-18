@@ -105,6 +105,15 @@ The current shared path is not PRF-portable:
 
 That can preserve authentication while silently losing the Nuri wallet root. The fork must preserve the imported HMAC state through the encrypted server/SDK model and use it in Android assertions.
 
+For the physical MVP, the sync boundary is the existing opaque encrypted `Cipher.data` field on the
+official Bitwarden Cloud. The iOS import must convert the SDK's legacy CXF-import result through the
+normal CiphersClient blob encryptor and fail before upload unless a PRF-capable cipher has `data`.
+The Android fork must decode the top-level field from sync, copy it into SDK `Cipher.data`, retain it
+through cached reload, and include it in create/update requests; this boundary is tracked in #85.
+Use a personal V2/security-state-2 Bitwarden test account. Do not start local Docker or deploy a
+custom Bitwarden backend for this path. The fork server PR is retained only for legacy compatibility
+research and is not an MVP runtime dependency.
+
 ## Definition of done for the first proof
 
 Do not close this issue until every applicable item is evidenced:
@@ -131,12 +140,12 @@ Do only what the golden journey requires:
 
 1. Freeze synthetic CXF and PRF vectors and pin compiling upstream baselines.
 2. Confirm the exact Apple iOS 26 and Android Credential Manager wire contracts used by the target devices.
-3. Add optional encrypted FIDO2 HMAC extension state through Bitwarden server wire models, SDK models, cipher encryption/reload, and Swift/Kotlin bindings.
+3. Add optional encrypted FIDO2 HMAC extension state through SDK models, BlobV1 cipher encryption/reload, and Swift/Kotlin bindings; route it through the existing official-cloud `Cipher.data` wire field.
 4. Preserve the Apple credential's extension state during CXF import into Bitwarden iOS.
 5. Validate the imported signing algorithm instead of silently hardcoding a different one.
 6. Bridge stored HMAC state into the authenticator and evaluate arbitrary requested PRF inputs with the correct user-verification seed.
 7. Carry Android PRF request inputs into the SDK and return standards-shaped results to Nuri.
-8. Preserve the credential through real Bitwarden encrypted sync to Android.
+8. Preserve opaque `Cipher.data` byte-for-byte through the updated Android network, SDK-mapping, and cached-sync paths (#85).
 9. Make only the smallest Nuri app changes required for the actual Android provider flow, credential binding, and fail-closed wallet commit boundary.
 10. Produce installable device builds and run the real journey.
 
@@ -165,7 +174,7 @@ The following tickets are intentionally labeled `priority:post-proof`: #12, #23,
 | Responsibility | Fork | Expected local checkout |
 | --- | --- | --- |
 | Coordination, vectors, evidence | `nuri-com/bitwarden-passkey-prf` | `/Users/eminmahrt/Developer/nuri-bitwarden/coordination` |
-| Encrypted server wire state | `nuri-com/server` | `/Users/eminmahrt/Developer/nuri-bitwarden/server` |
+| Optional legacy-format compatibility (not MVP runtime) | `nuri-com/server` | `/Users/eminmahrt/Developer/nuri-bitwarden/server` |
 | Shared Rust SDK, CXF, authenticator, bindings | `nuri-com/sdk-internal` | `/Users/eminmahrt/Developer/nuri-bitwarden/sdk-internal` |
 | Apple Credential Exchange integration | `nuri-com/ios` | `/Users/eminmahrt/Developer/nuri-bitwarden/ios` |
 | Android Credential Manager/provider | `nuri-com/android` | `/Users/eminmahrt/Developer/nuri-bitwarden/android` |
@@ -228,7 +237,7 @@ After a reviewed change is integrated into the Nuri fork, close its implementati
 
 ### 6. Integrate and prove on devices
 
-Pin cross-repository SDK/server/client commits, produce installable iOS and Android builds, and run the exact golden journey. Use a real test passkey but secret-safe evidence. When a device run fails, diagnose the actual boundary, fix it in the smallest responsible repository, review, rebuild, and repeat.
+Pin cross-repository SDK/client commits, prove the unchanged official-cloud `Cipher.data` boundary, produce installable iOS and Android builds, and run the exact golden journey. Use a real test passkey but secret-safe evidence. When a device run fails, diagnose the actual boundary, fix it in the smallest responsible repository, review, rebuild, and repeat.
 
 ### 7. Stop only at the correct terminal condition
 
@@ -253,9 +262,9 @@ These nine MVP-critical tickets are intentionally dependency-free and should sta
 GitHub issue dependencies are authoritative. The MVP-critical set is grouped here so no essential lane is forgotten:
 
 - Contract/harness: #7, #56, #57, #9, #11, #58, #16, #13, #59, #19
-- Portable credential core: #20, #21, #60, #17, #22, #26, #61, #62, #63, #31
-- iOS import and build: #28, #27, #64, #67, #46
-- Android provider and build: #35, #65, #66, #40, #41, #39, #42
+- Portable credential core: #21, #60, #17, #22, #26, #61, #62, #63, #31 (#20 is retained legacy compatibility, not an MVP runtime dependency)
+- iOS import and build: #28, #27, #83, #64, #67, #46
+- Android sync, provider, and build: #85, #35, #65, #66, #40, #41, #39, #42
 - Cross-device proof: #44, then #45
 
 The proof-first sequence is:
@@ -263,15 +272,15 @@ The proof-first sequence is:
 ```text
 contracts + vectors + build baselines
                  |
-encrypted server/SDK credential + CXF import + on-demand PRF
+encrypted SDK BlobV1 credential + CXF import + on-demand PRF
                  |
        shared import/sync/reload/PRF gate (#31)
                  |
        +---------+---------+
        |                   |
- iOS import/build     Android provider/build
+ iOS import/build     Android data-sync/provider/build (#85)
        |                   |
- Apple real import -> exact encrypted sync -> fresh Android Nuri recovery (#45)
+ Apple real import -> official-cloud Cipher.data sync -> fresh Android Nuri recovery (#45)
 ```
 
 ## Worker prompt
